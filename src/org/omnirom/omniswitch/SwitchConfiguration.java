@@ -33,7 +33,7 @@ public class SwitchConfiguration {
     public int mLocation = 0; // 0 = right 1 = left
     public boolean mAnimate = true;
     public int mIconSize = 60; // in dip
-    public int mIconSizeSettings = 60; // in dip
+    public int mIconSizeSettings = 48; // in dip
     public int mQSActionSize = 60; // in dp
     public int mActionSizePx = 48; // in px
     public int mOverlayIconSizeDp = 30;
@@ -49,7 +49,6 @@ public class SwitchConfiguration {
     public int mDragHandleWidth;
     public boolean mShowLabels = true;
     public int mDragHandleColor;
-    public float mDragHandleOpacity;
     public int mDefaultColor;
     public int mIconDpi;
     public boolean mAutoHide;
@@ -68,8 +67,7 @@ public class SwitchConfiguration {
     public int mLimitItemsX = 10;
     public int mHorizontalDividerWidth;
     public float mLabelFontSize;
-    public int mButtonPos = 0; // 0 = top 1 = bottom
-    public int mBgStyle = 0; // 0 = solid 1 = transparent
+    public int mButtonPos = 1; // 0 = top 1 = bottom
     public List<String> mFavoriteList = new ArrayList<String>();
     public boolean mSpeedSwitcher = true;
     public boolean mFilterActive = true;
@@ -85,6 +83,26 @@ public class SwitchConfiguration {
     public int mMemDisplaySize;
     public int mLayoutStyle;
     public float mThumbRatio = 1.0f;
+    public IconSize mIconSizeDesc = IconSize.NORMAL;
+    public int mIconBorderHorizontal = 8; // in dp
+    public BgStyle mBgStyle = BgStyle.SOLID_LIGHT;
+
+    // old pref slots
+    private static final String PREF_DRAG_HANDLE_COLOR = "drag_handle_color";
+    private static final String PREF_DRAG_HANDLE_OPACITY = "drag_handle_opacity";
+    private static final String PREF_FLAT_STYLE = "flat_style";
+
+    public enum IconSize {
+        SMALL,
+        NORMAL,
+        LARGE
+    }
+
+    public enum BgStyle {
+        TRANSPARENT,
+        SOLID_LIGHT,
+        SOLID_DARK
+    }
 
     public static SwitchConfiguration getInstance(Context context) {
         if (mInstance == null) {
@@ -102,7 +120,7 @@ public class SwitchConfiguration {
         Point size = new Point();
         mWindowManager.getDefaultDisplay().getSize(size);
         mDefaultColor = context.getResources()
-                .getColor(R.color.material_green);
+                .getColor(R.color.default_drag_handle_color);
         mDefaultHandleHeight = Math.round(100 * mDensity);
         mRestrictedMode = !hasSystemPermission(context);
         mLevelHeight = Math.round(80 * mDensity);
@@ -111,6 +129,7 @@ public class SwitchConfiguration {
         mOverlayIconSizePx = Math.round(mOverlayIconSizeDp * mDensity);
         mOverlayIconBorderPx =  Math.round(mOverlayIconBorderDp * mDensity);
         mHorizontalDividerWidth = 0;
+        mIconBorderHorizontal = Math.round(mIconBorderHorizontal * mDensity);
         // Render the default thumbnail background
         mThumbnailWidth = (int) context.getResources().getDimensionPixelSize(
                 R.dimen.thumbnail_width);
@@ -124,9 +143,16 @@ public class SwitchConfiguration {
     public void initDefaults(Context context) {
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
         if (!prefs.contains(SettingsActivity.PREF_BG_STYLE) &&
-                prefs.contains(SettingsActivity.PREF_FLAT_STYLE)) {
-            boolean flatStyle = prefs.getBoolean(SettingsActivity.PREF_FLAT_STYLE, true);
+                prefs.contains(PREF_FLAT_STYLE)) {
+            boolean flatStyle = prefs.getBoolean(PREF_FLAT_STYLE, true);
             prefs.edit().putString(SettingsActivity.PREF_BG_STYLE, flatStyle ? "0" : "1").commit();
+        }
+        if (!prefs.contains(SettingsActivity.PREF_DRAG_HANDLE_COLOR_NEW) &&
+                prefs.contains(PREF_DRAG_HANDLE_COLOR)) {
+            int dragHandleColor = prefs.getInt(PREF_DRAG_HANDLE_COLOR, mDefaultColor);
+            int opacity = prefs.getInt(PREF_DRAG_HANDLE_OPACITY, 100);
+            dragHandleColor = (dragHandleColor & 0x00FFFFFF) + (opacity << 24);
+            prefs.edit().putInt(SettingsActivity.PREF_DRAG_HANDLE_COLOR_NEW, dragHandleColor).commit();
         }
     }
 
@@ -138,8 +164,16 @@ public class SwitchConfiguration {
         String iconSize = prefs
                 .getString(SettingsActivity.PREF_ICON_SIZE, String.valueOf(mIconSize));
         mIconSize = Integer.valueOf(iconSize);
-        mShowRambar = prefs
-                .getBoolean(SettingsActivity.PREF_SHOW_RAMBAR, true);
+        if (mIconSize == 60) {
+            mIconSizeDesc = IconSize.NORMAL;
+            mIconSize = 55;
+        } else if (mIconSize == 80) {
+            mIconSizeDesc = IconSize.LARGE;
+            mIconSize = 75;
+        } else {
+            mIconSizeDesc = IconSize.SMALL;
+        }
+        mShowRambar = prefs.getBoolean(SettingsActivity.PREF_SHOW_RAMBAR, true);
         mShowLabels = prefs.getBoolean(SettingsActivity.PREF_SHOW_LABELS, true);
 
         int relHeightStart = (int) (getDefaultOffsetStart() / (getCurrentDisplayHeight() / 100));
@@ -157,9 +191,7 @@ public class SwitchConfiguration {
         mLabelFontSizePx = Math.round((mLabelFontSize + mIconBorder) * mDensity);
 
         mDragHandleColor = prefs.getInt(
-                SettingsActivity.PREF_DRAG_HANDLE_COLOR, mDefaultColor);
-        opacity = prefs.getInt(SettingsActivity.PREF_DRAG_HANDLE_OPACITY, 100);
-        mDragHandleOpacity = (float) opacity / 100.0f;
+                    SettingsActivity.PREF_DRAG_HANDLE_COLOR_NEW, mDefaultColor);
         mAutoHide = prefs.getBoolean(SettingsActivity.PREF_AUTO_HIDE_HANDLE,
                 false);
         mDragHandleShow = prefs.getBoolean(
@@ -175,23 +207,31 @@ public class SwitchConfiguration {
         mSpeedSwitchButtons = Utils.buttonStringToMap(prefs.getString(SettingsActivity.PREF_SPEED_SWITCHER_BUTTON_NEW,
                 SettingsActivity.PREF_SPEED_SWITCHER_BUTTON_DEFAULT_NEW), SettingsActivity.PREF_SPEED_SWITCHER_BUTTON_DEFAULT_NEW);
         mLimitItemsX = prefs.getInt(SettingsActivity.PREF_SPEED_SWITCHER_ITEMS, 10);
-        String buttonPos = prefs.getString(SettingsActivity.PREF_BUTTON_POS, "0");
+        String buttonPos = prefs.getString(SettingsActivity.PREF_BUTTON_POS, "1");
         mButtonPos = Integer.valueOf(buttonPos);
+
         String bgStyle = prefs.getString(SettingsActivity.PREF_BG_STYLE, "0");
-        mBgStyle = Integer.valueOf(bgStyle);
+        int bgStyleInt = Integer.valueOf(bgStyle);
+        if (bgStyleInt == 0) {
+            mBgStyle = BgStyle.SOLID_LIGHT;
+        } else if(bgStyleInt == 1) {
+            mBgStyle = BgStyle.TRANSPARENT;
+        } else {
+            mBgStyle = BgStyle.SOLID_DARK;
+        }
 
         mFavoriteList.clear();
         String favoriteListString = prefs.getString(SettingsActivity.PREF_FAVORITE_APPS, "");
         Utils.parseFavorites(favoriteListString, mFavoriteList);
         mSpeedSwitcher = prefs.getBoolean(SettingsActivity.PREF_SPEED_SWITCHER, true);
-        mFilterBoot = prefs.getBoolean(SettingsActivity.PREF_APP_FILTER_BOOT, true);
+        mFilterBoot = prefs.getBoolean(SettingsActivity.PREF_APP_FILTER_BOOT, false);
         String filterTimeString = prefs.getString(SettingsActivity.PREF_APP_FILTER_TIME, "0");
         mFilterTime = Integer.valueOf(filterTimeString);
         if (mFilterTime != 0) {
             // value is in hours but we need millisecs
             mFilterTime = mFilterTime * 3600 * 1000;
         }
-        String layoutStyle = prefs.getString(SettingsActivity.PREF_LAYOUT_STYLE, "0");
+        String layoutStyle = prefs.getString(SettingsActivity.PREF_LAYOUT_STYLE, "1");
         mLayoutStyle = Integer.valueOf(layoutStyle);
         String thumbSize = prefs.getString(SettingsActivity.PREF_THUMB_SIZE, "1.0");
         mThumbRatio = Float.valueOf(thumbSize);

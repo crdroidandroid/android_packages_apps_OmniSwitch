@@ -41,6 +41,7 @@ import android.preference.Preference.OnPreferenceChangeListener;
 import android.preference.PreferenceActivity;
 import android.preference.PreferenceManager;
 import android.preference.PreferenceScreen;
+import android.preference.SwitchPreference;
 import android.util.Log;
 import android.view.Menu;
 import android.view.View;
@@ -57,8 +58,7 @@ public class SettingsActivity extends PreferenceActivity implements
     public static final String PREF_ICON_SIZE = "icon_size";
     public static final String PREF_DRAG_HANDLE_LOCATION = "drag_handle_location_new";
     private static final String PREF_ADJUST_HANDLE = "adjust_handle";
-    public static final String PREF_DRAG_HANDLE_COLOR = "drag_handle_color";
-    public static final String PREF_DRAG_HANDLE_OPACITY = "drag_handle_opacity";
+    public static final String PREF_DRAG_HANDLE_COLOR_NEW = "drag_handle_color_new";
     public static final String PREF_SHOW_RAMBAR = "show_rambar";
     public static final String PREF_SHOW_LABELS = "show_labels";
     public static final String PREF_FAVORITE_APPS_CONFIG = "favorite_apps_config";
@@ -82,7 +82,6 @@ public class SettingsActivity extends PreferenceActivity implements
     public static final String PREF_SPEED_SWITCHER_BUTTON_NEW = "speed_switch_button_new";
     public static final String PREF_SPEED_SWITCHER_BUTTON_DEFAULT_NEW = "0:0,1:0,2:1,3:1,4:1,5:1,6:1,7:0";
     public static final String PREF_SPEED_SWITCHER_ITEMS = "speed_switch_items";
-    public static final String PREF_FLAT_STYLE = "flat_style";
     public static final String PREF_BUTTON_POS = "button_pos";
     public static final String PREF_BG_STYLE = "bg_style";
     public static final String PREF_APP_FILTER_BOOT = "app_filter_boot";
@@ -121,7 +120,6 @@ public class SettingsActivity extends PreferenceActivity implements
     private String[] mButtonEntries;
     private Drawable[] mButtonImages;
     private String mButtons;
-    private SeekBarPreference mDragHandleOpacity;
     private ListPreference mGravity;
     private Preference mIconpack;
     private Switch mToggleServiceSwitch;
@@ -136,6 +134,7 @@ public class SettingsActivity extends PreferenceActivity implements
     private ListPreference mLayoutStyle;
     private ListPreference mAppFilterTime;
     private ListPreference mThumbSize;
+    private SwitchPreference mEnable;
 
     @Override
     public void onPause() {
@@ -166,6 +165,9 @@ public class SettingsActivity extends PreferenceActivity implements
 
         addPreferencesFromResource(R.xml.recents_settings);
 
+        mEnable = (SwitchPreference) findPreference(PREF_ENABLE);
+        mEnable.setChecked(SwitchService.isRunning() && mPrefs.getBoolean(SettingsActivity.PREF_ENABLE, false));
+        mEnable.setOnPreferenceChangeListener(this);
         mIconSize = (ListPreference) findPreference(PREF_ICON_SIZE);
         mIconSize.setOnPreferenceChangeListener(this);
         int idx = mIconSize.findIndexOfValue(mPrefs.getString(PREF_ICON_SIZE,
@@ -175,9 +177,6 @@ public class SettingsActivity extends PreferenceActivity implements
         mOpacity = (SeekBarPreference) findPreference(PREF_OPACITY);
         mOpacity.setInitValue(mPrefs.getInt(PREF_OPACITY, 70));
         mOpacity.setOnPreferenceChangeListener(this);
-        mDragHandleOpacity = (SeekBarPreference) findPreference(PREF_DRAG_HANDLE_OPACITY);
-        mDragHandleOpacity.setInitValue(mPrefs.getInt(PREF_DRAG_HANDLE_OPACITY, 100));
-        mDragHandleOpacity.setOnPreferenceChangeListener(this);
         mAdjustHandle = (Preference) findPreference(PREF_ADJUST_HANDLE);
         mButtonConfig = (Preference) findPreference(PREF_BUTTON_CONFIG);
         mButtons = mPrefs.getString(PREF_BUTTONS_NEW, PREF_BUTTON_DEFAULT_NEW);
@@ -307,10 +306,6 @@ public class SettingsActivity extends PreferenceActivity implements
             float val = Float.parseFloat((String) newValue);
             mPrefs.edit().putInt(PREF_OPACITY, (int) val).commit();
             return true;
-        } else if (preference == mDragHandleOpacity) {
-            float val = Float.parseFloat((String) newValue);
-            mPrefs.edit().putInt(PREF_DRAG_HANDLE_OPACITY, (int) val).commit();
-            return true;
         } else if (preference == mGravity) {
             String value = (String) newValue;
             int idx = mGravity.findIndexOfValue(value);
@@ -346,6 +341,10 @@ public class SettingsActivity extends PreferenceActivity implements
             int idx = mThumbSize.findIndexOfValue(value);
             mThumbSize.setSummary(mThumbSize.getEntries()[idx]);
             mThumbSize.setValueIndex(idx);
+            return true;
+        } else if (preference == mEnable) {
+            boolean value = ((Boolean) newValue).booleanValue();
+            startOmniSwitch(value);
             return true;
         }
         return false;
@@ -393,37 +392,40 @@ public class SettingsActivity extends PreferenceActivity implements
         }
     }
 
-    @Override
+    /*@Override
     public boolean onCreateOptionsMenu(Menu menu) {
         Log.d(TAG, "onCreateOptionsMenu");
         getMenuInflater().inflate(R.menu.settings_menu, menu);
-        boolean startOnBoot = mPrefs.getBoolean(SettingsActivity.PREF_START_ON_BOOT, false);
         mToggleServiceSwitch = (Switch) menu.findItem(R.id.toggle_service).getActionView().findViewById(R.id.switch_item);
-        mToggleServiceSwitch.setChecked(SwitchService.isRunning() && mPrefs.getBoolean(SettingsActivity.PREF_ENABLE, startOnBoot));
+        mToggleServiceSwitch.setChecked(SwitchService.isRunning() && mPrefs.getBoolean(SettingsActivity.PREF_ENABLE, false));
         mToggleServiceSwitch.setOnClickListener(new OnClickListener(){
             @Override
             public void onClick(View v) {
                 boolean value = ((Switch)v).isChecked();
-                Intent svc = new Intent(SettingsActivity.this, SwitchService.class);
-                Log.d(TAG, "toggle service " + value);
-                if (value) {
-                    if (SwitchService.isRunning()){
-                        stopService(svc);
-                    }
-                    startService(svc);
-                } else {
-                    if (SwitchService.isRunning()){
-                        stopService(svc);
-                    }
-                }
+                startOmniSwitch(value);
                 mPrefs.edit().putBoolean(PREF_ENABLE, value).commit();
             }});
         return true;
-    }
+    }*/
 
     public void updatePrefs(SharedPreferences prefs, String key) {
         if (!SwitchService.isRunning()){
             IconPackHelper.getInstance(SettingsActivity.this).updatePrefs(mPrefs, null);
+        }
+    }
+
+    private void startOmniSwitch(boolean value) {
+        Intent svc = new Intent(SettingsActivity.this, SwitchService.class);
+        Log.d(TAG, "toggle service " + value);
+        if (value) {
+            if (SwitchService.isRunning()){
+                stopService(svc);
+            }
+            startService(svc);
+        } else {
+            if (SwitchService.isRunning()){
+                stopService(svc);
+            }
         }
     }
 }

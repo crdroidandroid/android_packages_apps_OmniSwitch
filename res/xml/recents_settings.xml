@@ -18,10 +18,15 @@
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
 	android:title="@string/recents_settings_title" >
 
+	<SwitchPreference
+		android:defaultValue="false"
+		android:key="enable"
+		android:title="@string/enable_title" />
+
 	<CheckBoxPreference
 		android:key="start_on_boot"
-		android:summary="@string/start_on_boot_summary"
-		android:title="@string/start_on_boot_title" />
+		android:title="@string/start_on_boot_title"
+		android:defaultValue="true" />
 
 	<PreferenceCategory
 		android:key="category_overlay"
@@ -48,7 +53,7 @@
 			android:entries="@array/bg_style_entries"
 			android:entryValues="@array/bg_style_values"
 			android:key="bg_style"
-			android:summary="@string/bg_style_solid"
+			android:summary="@string/bg_style_solid_light"
 			android:title="@string/bg_style_title" />
 
 		<org.omnirom.omniswitch.ui.SeekBarPreference
@@ -92,12 +97,14 @@
 			android:entryValues="@array/button_pos_values"
 			android:key="button_pos"
 			android:summary="@string/button_pos_top"
-			android:title="@string/button_pos_title" />
+			android:title="@string/button_pos_title"
+			android:defaultValue="1" />
 		<ListPreference
 			android:entries="@array/layout_style_entries"
 			android:entryValues="@array/layout_style_values"
 			android:key="layout_style"
-			android:title="@string/layout_style_title" />
+			android:title="@string/layout_style_title"
+			android:defaultValue="1" />
 		<ListPreference
 			android:defaultValue="1.0"
 			android:entries="@array/thumb_size_entries"
@@ -109,7 +116,7 @@
 		android:key="app_filter_category"
 		android:title="@string/app_filter_category_title" >
 		<CheckBoxPreference
-			android:defaultValue="true"
+			android:defaultValue="false"
 			android:key="app_filter_boot"
 			android:title="@string/app_filter_boot_title" />
 		<ListPreference
@@ -138,15 +145,8 @@
 
 		<org.omnirom.omniswitch.ui.DragHandleColorPreference
 			android:dependency="drag_handle_enable"
-			android:key="drag_handle_color"
+			android:key="drag_handle_color_new"
 			android:title="@string/drag_handle_color_title" />
-
-		<org.omnirom.omniswitch.ui.SeekBarPreference
-			android:defaultValue="100"
-			android:dependency="drag_handle_enable"
-			android:key="drag_handle_opacity"
-			android:max="100"
-			android:title="@string/drag_handle_opacity_title" />
 
 		<CheckBoxPreference
 			android:defaultValue="false"

@@ -22,10 +22,12 @@ import java.util.List;
 import org.omnirom.omniswitch.PackageManager;
 import org.omnirom.omniswitch.R;
 import org.omnirom.omniswitch.SettingsActivity;
+import org.omnirom.omniswitch.SwitchConfiguration;
 import org.omnirom.omniswitch.SwitchManager;
 import org.omnirom.omniswitch.TaskDescription;
 
 import android.animation.Animator;
+import android.animation.AnimatorSet;
 import android.animation.Animator.AnimatorListener;
 import android.animation.ObjectAnimator;
 import android.app.ActivityManager;
@@ -65,8 +67,6 @@ public class SwitchLayout extends AbstractSwitchLayout {
     private TextView mBackgroundProcessText;
     private TextView mForegroundProcessText;
     private LinearLayout mRamUsageBarContainer;
-    private Animator mAppDrawerAnim;
-    private Animator mRecentsAnim;
     private HorizontalScrollView mButtonList;
     protected Runnable mUpdateRamBarTask;
 
@@ -271,6 +271,7 @@ public class SwitchLayout extends AbstractSwitchLayout {
         mBackgroundProcessText.setTextColor(Color.WHITE);
 
         mAppDrawer = (GridView) mView.findViewById(R.id.app_drawer);
+        mAppDrawer.setVerticalScrollBarEnabled(false);
         mAppDrawer.setOnItemClickListener(new OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View view,
@@ -301,6 +302,18 @@ public class SwitchLayout extends AbstractSwitchLayout {
         mView.setOnTouchListener(mDragHandleListener);
         mPopupView.setOnTouchListener(mDragHandleListener);
         mPopupView.setOnKeyListener(new PopupKeyListener());
+
+        mButtonList = (HorizontalScrollView) mView
+                .findViewById(mConfiguration.mButtonPos == 0 ? R.id.button_list_top
+                        : R.id.button_list_bottom);
+        mButtonList.setHorizontalScrollBarEnabled(false);
+        mButtonListItems = (LinearLayout) mView
+                .findViewById(mConfiguration.mButtonPos == 0 ? R.id.button_list_items_top
+                        : R.id.button_list_items_bottom);
+        mButtonListContainer = (LinearLayout) mView
+                .findViewById(mConfiguration.mButtonPos == 0 ? R.id.button_list_container_top
+                        : R.id.button_list_container_bottom);
+        updateStyle();
     }
 
     @Override
@@ -345,40 +358,6 @@ public class SwitchLayout extends AbstractSwitchLayout {
 
     @Override
     protected synchronized void initView() {
-        if (mButtonListContainer != null) {
-            mButtonListContainer.setVisibility(View.GONE);
-        }
-        mButtonList = (HorizontalScrollView) mView
-                .findViewById(mConfiguration.mButtonPos == 0 ? R.id.button_list_top
-                        : R.id.button_list_bottom);
-        mButtonList.setHorizontalScrollBarEnabled(false);
-        mButtonListItems = (LinearLayout) mView
-                .findViewById(mConfiguration.mButtonPos == 0 ? R.id.button_list_items_top
-                        : R.id.button_list_items_bottom);
-        mButtonListContainer = (LinearLayout) mView
-                .findViewById(mConfiguration.mButtonPos == 0 ? R.id.button_list_container_top
-                        : R.id.button_list_container_bottom);
-        mButtonListContainer.setVisibility(View.VISIBLE);
-
-        updateStyle();
-
-        if (mConfiguration.mBgStyle == 0) {
-            mView.setBackground(mContext.getResources().getDrawable(
-                    R.drawable.overlay_bg_flat));
-        } else {
-            mView.setBackground(mContext.getResources().getDrawable(
-                    R.drawable.overlay_bg));
-            if (!mConfiguration.mDimBehind) {
-                mView.getBackground().setAlpha(
-                        (int) (255 * mConfiguration.mBackgroundOpacity));
-            } else {
-                mView.getBackground().setAlpha(0);
-            }
-        }
-        mRamUsageBarContainer
-                .setVisibility(mConfiguration.mShowRambar ? View.VISIBLE
-                        : View.GONE);
-
         mConfiguration.calcHorizontalDivider();
 
         mFavoriteListHorizontal.setLayoutParams(getListParams());
@@ -407,39 +386,9 @@ public class SwitchLayout extends AbstractSwitchLayout {
         mAppDrawer.setVisibility(View.GONE);
         mAppDrawer.setSelection(0);
         mView.setTranslationX(0);
-
-        if (!mHasFavorites) {
-            mShowFavorites = false;
-        }
-
-        mFavoriteListHorizontal.setVisibility(mShowFavorites ? View.VISIBLE
-                : View.GONE);
-        enableOpenFavoriteButton();
-        mOpenFavorite.setRotation(getExpandRotation());
-        mOpenFavorite
-                .setBackgroundResource(mConfiguration.mBgStyle == 0 ? R.drawable.ripple_dark
-                        : R.drawable.ripple_light);
-
-        if (mHasFavorites && !mShowcaseDone) {
-            mOpenFavorite.getViewTreeObserver().addOnGlobalLayoutListener(
-                    new ViewTreeObserver.OnGlobalLayoutListener() {
-                        @Override
-                        public void onGlobalLayout() {
-                            mOpenFavorite.getViewTreeObserver()
-                                    .removeOnGlobalLayoutListener(this);
-                            int[] location = new int[2];
-                            mOpenFavorite.getLocationOnScreen(location);
-                            mOpenFavoriteX = location[0];
-                            mOpenFavoriteY = location[1];
-                        }
-                    });
-        }
-
-        buildButtons();
-
-        mButtonsVisible = isButtonVisible();
-
         mVirtualBackKey = false;
+        enableOpenFavoriteButton(true);
+        mOpenFavorite.setRotation(getExpandRotation());
     }
 
     private LinearLayout.LayoutParams getListParams() {
@@ -454,16 +403,15 @@ public class SwitchLayout extends AbstractSwitchLayout {
                 mConfiguration.getItemMaxHeight());
     }
 
-    // TODO dont use real icon size values in code
     private int getAppDrawerLines() {
-        if (mConfiguration.mIconSize == 40) {
+        if (mConfiguration.mIconSizeDesc == SwitchConfiguration.IconSize.SMALL) {
             if (mConfiguration.isLandscape()) {
                 return 4;
             } else {
                 return 5;
             }
         }
-        if (mConfiguration.mIconSize == 60) {
+        if (mConfiguration.mIconSizeDesc == SwitchConfiguration.IconSize.NORMAL) {
             if (mConfiguration.isLandscape()) {
                 return 3;
             } else {
@@ -527,19 +475,22 @@ public class SwitchLayout extends AbstractSwitchLayout {
         if (DEBUG) {
             Log.d(TAG, "updatePrefs");
         }
-        mFavoriteListAdapter.notifyDataSetChanged();
-        if (mFavoriteListHorizontal != null) {
-            mFavoriteListHorizontal.setAdapter(mFavoriteListAdapter);
-        }
-        mRecentListAdapter.notifyDataSetChanged();
-        if (mRecentListHorizontal != null) {
-            mRecentListHorizontal.setAdapter(mRecentListAdapter);
-        }
-        mAppDrawerListAdapter.notifyDataSetChanged();
-        if (mAppDrawer != null) {
-            mAppDrawer.setAdapter(mAppDrawerListAdapter);
+
+        if (key != null && isPrefKeyForForceUpdate(key)) {
+            if (mFavoriteListHorizontal != null) {
+                mFavoriteListHorizontal.setAdapter(mFavoriteListAdapter);
+            }
+            if (mRecentListHorizontal != null) {
+                mRecentListHorizontal.setAdapter(mRecentListAdapter);
+            }
+            if (mAppDrawer != null) {
+                mAppDrawer.setAdapter(mAppDrawerListAdapter);
+            }
         }
         buildButtonList();
+        if (mView != null) {
+            updateStyle();
+        }
     }
 
     @Override
@@ -560,12 +511,6 @@ public class SwitchLayout extends AbstractSwitchLayout {
                         mConfiguration.mHorizontalDividerWidth / 2, 0,
                         mConfiguration.mHorizontalDividerWidth / 2, 0);
 
-                mFavoriteListAdapter.notifyDataSetChanged();
-                mFavoriteListHorizontal.setAdapter(mFavoriteListAdapter);
-
-                mRecentListAdapter.notifyDataSetChanged();
-                mRecentListHorizontal.setAdapter(mRecentListAdapter);
-
                 mAppDrawer.setLayoutParams(getAppDrawerParams());
                 mAppDrawer.requestLayout();
 
@@ -579,73 +524,16 @@ public class SwitchLayout extends AbstractSwitchLayout {
 
     @Override
     protected void flipToAppDrawerNew() {
-        if (mRecentsAnim != null) {
-            mRecentsAnim.cancel();
-        }
-        if (mAppDrawerAnim != null) {
-            mAppDrawerAnim.cancel();
-        }
-
-        // center right
-        int cx = (mAppDrawer.getLeft() + mAppDrawer.getRight() / 2);
-        int cy = (mAppDrawer.getTop() + mAppDrawer.getBottom() / 2);
-
-        // get the final radius for the clipping circle
-        int finalRadius = Math.max(mAppDrawer.getWidth(),
-                mAppDrawer.getHeight());
-
-        // create the animator for this view (the start radius is zero)
-        mAppDrawerAnim = ViewAnimationUtils.createCircularReveal(mAppDrawer,
-                cx, cy, 0, finalRadius);
-        mAppDrawerAnim.setDuration(FLIP_DURATION);
+        mRecents.setVisibility(View.GONE);
         mAppDrawer.setVisibility(View.VISIBLE);
-
-        mRecents.animate().alpha(0f).setDuration(FLIP_DURATION / 2)
-                .withEndAction(new Runnable() {
-                    @Override
-                    public void run() {
-                        mRecents.setVisibility(View.GONE);
-                        mRecents.setAlpha(1f);
-                        enableOpenFavoriteButton();
-                    }
-                });
-
-        mAppDrawerAnim.start();
+        enableOpenFavoriteButton(false);
     }
 
     @Override
     protected void flipToRecentsNew() {
-        if (mRecentsAnim != null) {
-            mRecentsAnim.cancel();
-        }
-        if (mAppDrawerAnim != null) {
-            mAppDrawerAnim.cancel();
-        }
-
-        // center
-        int cx = (mRecents.getLeft() + mRecents.getRight() / 2);
-        int cy = (mRecents.getTop() + mRecents.getBottom() / 2);
-
-        // get the final radius for the clipping circle
-        int finalRadius = Math.max(mRecents.getWidth(), mRecents.getHeight());
-
-        // create the animator for this view (the start radius is zero)
-        mRecentsAnim = ViewAnimationUtils.createCircularReveal(mRecents, cx,
-                cy, 0, finalRadius);
-        mRecentsAnim.setDuration(FLIP_DURATION);
+        mAppDrawer.setVisibility(View.GONE);
         mRecents.setVisibility(View.VISIBLE);
-
-        mAppDrawer.animate().alpha(0f).setDuration(FLIP_DURATION / 2)
-                .withEndAction(new Runnable() {
-                    @Override
-                    public void run() {
-                        mAppDrawer.setVisibility(View.GONE);
-                        mAppDrawer.setAlpha(1f);
-                        enableOpenFavoriteButton();
-                    }
-                });
-
-        mRecentsAnim.start();
+        enableOpenFavoriteButton(true);
     }
 
     @Override
@@ -660,21 +548,30 @@ public class SwitchLayout extends AbstractSwitchLayout {
             mFavoriteListHorizontal.setVisibility(View.VISIBLE);
             mFavoriteListHorizontal.setScaleY(0f);
             mFavoriteListHorizontal.setPivotY(0f);
-            mShowFavAnim = start(interpolator(
+            Animator expandAnimator = interpolator(
                     mLinearInterpolator,
-                    ObjectAnimator.ofFloat(mFavoriteListHorizontal,
-                            View.SCALE_Y, 0f, 1f)).setDuration(
-                    FAVORITE_DURATION));
+                    ObjectAnimator.ofFloat(mFavoriteListHorizontal, View.SCALE_Y, 0f, 1f));
+            Animator rotateAnimator = interpolator(
+                    mLinearInterpolator,
+                    ObjectAnimator.ofFloat(mOpenFavorite, View.ROTATION, ROTATE_0_DEGREE, ROTATE_180_DEGREE));
+            mShowFavAnim = new AnimatorSet();
+            mShowFavAnim.playTogether(expandAnimator, rotateAnimator);
+            mShowFavAnim.setDuration(FAVORITE_DURATION);
+            mShowFavAnim.start();
         } else {
             mFavoriteListHorizontal.setScaleY(1f);
             mFavoriteListHorizontal.setPivotY(0f);
-            mShowFavAnim = start(setVisibilityWhenDone(
-                    interpolator(
-                            mLinearInterpolator,
-                            ObjectAnimator.ofFloat(mFavoriteListHorizontal,
-                                    View.SCALE_Y, 1f, 0f)).setDuration(
-                            FAVORITE_DURATION), mFavoriteListHorizontal,
-                    View.GONE));
+            Animator collapseAnimator = setVisibilityWhenDone(interpolator(
+                    mLinearInterpolator,
+                    ObjectAnimator.ofFloat(mFavoriteListHorizontal, View.SCALE_Y, 1f, 0f)),
+                    mFavoriteListHorizontal, View.GONE);
+            Animator rotateAnimator = interpolator(
+                    mLinearInterpolator,
+                    ObjectAnimator.ofFloat(mOpenFavorite, View.ROTATION, ROTATE_180_DEGREE, ROTATE_360_DEGREE));
+            mShowFavAnim = new AnimatorSet();
+            mShowFavAnim.playTogether(collapseAnimator, rotateAnimator);
+            mShowFavAnim.setDuration(FAVORITE_DURATION);
+            mShowFavAnim.start();
         }
 
         mShowFavAnim.addListener(new AnimatorListener() {
@@ -708,9 +605,7 @@ public class SwitchLayout extends AbstractSwitchLayout {
     }
 
     private void updateStyle() {
-        if (mConfiguration.mBgStyle == 0) {
-            mButtonListContainer.setBackground(mContext.getResources()
-                    .getDrawable(R.drawable.overlay_bg_button_flat));
+        if (mConfiguration.mBgStyle == SwitchConfiguration.BgStyle.SOLID_LIGHT) {
             mForegroundProcessText.setShadowLayer(0, 0, 0, Color.BLACK);
             mBackgroundProcessText.setShadowLayer(0, 0, 0, Color.BLACK);
             mNoRecentApps.setTextColor(Color.BLACK);
@@ -722,9 +617,7 @@ public class SwitchLayout extends AbstractSwitchLayout {
                     mContext.getResources().getDrawable(
                             R.drawable.ic_expand_down_small)));
             mRamUsageBarContainer.setOutlineProvider(BAR_OUTLINE_PROVIDER);
-            mButtonListContainer.setOutlineProvider(BUTTON_OUTLINE_PROVIDER);
         } else {
-            mButtonListContainer.setBackground(null);
             mForegroundProcessText.setShadowLayer(5, 0, 0, Color.BLACK);
             mBackgroundProcessText.setShadowLayer(5, 0, 0, Color.BLACK);
             mNoRecentApps.setTextColor(Color.WHITE);
@@ -734,8 +627,45 @@ public class SwitchLayout extends AbstractSwitchLayout {
                     mContext.getResources().getDrawable(
                             R.drawable.ic_expand_down_small)));
             mRamUsageBarContainer.setOutlineProvider(null);
+        }
+        if (mConfiguration.mBgStyle != SwitchConfiguration.BgStyle.TRANSPARENT) {
+            mButtonListContainer.setBackground(mContext.getResources()
+                    .getDrawable(R.drawable.overlay_bg_button_flat));
+            mButtonListContainer.setOutlineProvider(BUTTON_OUTLINE_PROVIDER);
+        } else {
+            mButtonListContainer.setBackground(null);
             mButtonListContainer.setOutlineProvider(null);
         }
+        if (mConfiguration.mBgStyle == SwitchConfiguration.BgStyle.SOLID_LIGHT) {
+            mView.setBackground(mContext.getResources().getDrawable(
+                    R.drawable.overlay_bg_flat));
+        } else if (mConfiguration.mBgStyle == SwitchConfiguration.BgStyle.SOLID_DARK) {
+            mView.setBackground(mContext.getResources().getDrawable(
+                    R.drawable.overlay_bg_flat_dark));
+        } else {
+            mView.setBackground(mContext.getResources().getDrawable(
+                    R.drawable.overlay_bg));
+            if (!mConfiguration.mDimBehind) {
+                mView.getBackground().setAlpha(
+                        (int) (255 * mConfiguration.mBackgroundOpacity));
+            } else {
+                mView.getBackground().setAlpha(0);
+            }
+        }
+        mRamUsageBarContainer
+                .setVisibility(mConfiguration.mShowRambar ? View.VISIBLE
+                        : View.GONE);
+        if (!mHasFavorites) {
+            mShowFavorites = false;
+        }
+        mFavoriteListHorizontal.setVisibility(mShowFavorites ? View.VISIBLE
+                : View.GONE);
+        mOpenFavorite
+                .setBackgroundResource(mConfiguration.mBgStyle == SwitchConfiguration.BgStyle.SOLID_LIGHT
+                        ? R.drawable.ripple_dark  : R.drawable.ripple_light);
+
+        buildButtons();
+        mButtonsVisible = isButtonVisible();
     }
 
     @Override
@@ -754,7 +684,7 @@ public class SwitchLayout extends AbstractSwitchLayout {
     protected void afterShowDone() {
     }
 
-    private int getExpandRotation() {
-        return mShowFavorites ? ROTATE_180_DEGREE : 0;
+    private float getExpandRotation() {
+        return mShowFavorites ? ROTATE_180_DEGREE : ROTATE_0_DEGREE;
     }
 }
