@@ -27,7 +27,6 @@
 	<string name="opacity_summary">遮罩背景不透明度</string>
 	<string name="animate_title">动画</string>
 	<string name="animate_title_summary">遮罩显示与消失动画</string>
-	<string name="adjust_handle_title">位置和大小</string>
 	<string name="adjust_handle_help">移动和拖动调整大小</string>
 	<string name="icon_size_normal">正常</string>
 	<string name="icon_size_small">小</string>
@@ -91,7 +90,7 @@
 	<string name="back_help">返回</string>
 	<string name="kill_current">关闭前台</string>
 	<string name="kill_current_help">关闭前台应用</string>
-	<string name="speed_switch_color_summary">蓝色 -最近使用的应用。 绿色 - 最爱的应用。 红色 - 活动</string>
+	<string name="speed_switch_color_summary">蓝色 - 最近使用的应用。 绿色 - 最爱的应用。 红色 - 活动</string>
 	<string name="speed_switch_color">水平背景颜色</string>
 	<string name="speed_switch_limit_summary">限制水平区域的变化</string>
 	<string name="speed_switch_limit">改变水平区域</string>
@@ -141,4 +140,12 @@
 	<string name="enable_title">启用</string>
 	<string name="adjust_handle_width">宽度</string>
 	<string name="adjust_handle_position">位置</string>
+	<string name="package_top_task_title">顶部</string>
+	<string name="package_left_task_title">左侧</string>
+	<string name="package_bottom_task_title">底部</string>
+	<string name="package_right_task_title">右侧</string>
+	<string name="package_full_task_title">原尺寸</string>
+	<string name="shortcut_label_toggle_overlay">切换遮罩</string>
+	<string name="adjust_handle_title_new">配置拖动</string>
+	<string name="adjust_handle_summary">配置位置大小和颜色</string>
 </resources>
