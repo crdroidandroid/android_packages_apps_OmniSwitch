@@ -252,18 +252,6 @@ public class Utils {
                 android.content.pm.PackageManager.COMPONENT_ENABLED_STATE_DISABLED, 0);
     }
 
-    public static List<String> getFavoriteListFromStats(Context context, int count) {
-        List<String> favoriteList = new ArrayList<String>();
-        List<String> topLaunchList = SwitchStatistics.getInstance(context).getTopmostLaunches(count);
-        for (String pkgName : topLaunchList) {
-            List<String> pkgList = PackageManager.getInstance(context).getPackageListForPackageName(pkgName);
-            if (pkgList.size() != 0) {
-                favoriteList.addAll(pkgList);
-            }
-        }
-        return favoriteList;
-    }
-
     public static boolean isNycMR1OrAbove() {
         return Build.VERSION.SDK_INT >= Build.VERSION_CODES.N_MR1;
     }

@@ -192,7 +192,6 @@ public class SwitchManager {
             }
             ActivityManagerNative.getDefault().startActivityFromRecents(
                         ad.getPersistentTaskId(),  options.toBundle());
-            SwitchStatistics.getInstance(mContext).traceStartIntent(ad.getIntent());
             if (DEBUG){
                 Log.d(TAG, "switch to " + ad.getLabel() + " " + ad.getStackId());
             }
@@ -342,7 +341,6 @@ public class SwitchManager {
     public static void startIntentFromtString(Context context, String intent) {
         try {
             Intent intentapp = Intent.parseUri(intent, 0);
-            SwitchStatistics.getInstance(context).traceStartIntent(intentapp);
             context.startActivity(intentapp);
         } catch (URISyntaxException e) {
             Log.e(TAG, "URISyntaxException: [" + intent + "]");

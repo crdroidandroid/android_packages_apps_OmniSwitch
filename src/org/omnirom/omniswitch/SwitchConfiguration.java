@@ -95,7 +95,6 @@ public class SwitchConfiguration {
     public int mIconBorderHorizontalDp = 8; // in dp
     public int mIconBorderHorizontalPx = 8; // in px
     public BgStyle mBgStyle = BgStyle.SOLID_LIGHT;
-    public boolean mLaunchStatsEnabled;
     public boolean mRevertRecents;
     public int mIconSizeQuickDp = 100; // dpi
     public int mIconSizeQuickPx = 100;
@@ -276,7 +275,6 @@ public class SwitchConfiguration {
         String thumbSize = prefs.getString(SettingsActivity.PREF_THUMB_SIZE, "1.0");
         mThumbRatio = Float.valueOf(thumbSize);
         mFilterRunning = prefs.getBoolean(SettingsActivity.PREF_APP_FILTER_RUNNING, false);
-        mLaunchStatsEnabled = prefs.getBoolean(SettingsActivity.PREF_LAUNCH_STATS, false);
         mRevertRecents = prefs.getBoolean(SettingsActivity.PREF_REVERT_RECENTS, false);
 
         for(OnSharedPreferenceChangeListener listener : mPrefsListeners) {

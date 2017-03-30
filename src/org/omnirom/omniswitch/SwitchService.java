@@ -119,9 +119,6 @@ public class SwitchService extends Service {
             };
 
             mPrefs.registerOnSharedPreferenceChangeListener(mPrefsListener);
-            if (mConfiguration.mLaunchStatsEnabled) {
-                SwitchStatistics.getInstance(this).loadStatistics();
-            }
             mIsRunning = true;
         } catch(Exception e) {
             Log.e(TAG, "onCreate", e);
@@ -145,9 +142,6 @@ public class SwitchService extends Service {
             mManager.shutdownService();
         }
 
-        if (mConfiguration.mLaunchStatsEnabled) {
-            SwitchStatistics.getInstance(this).saveStatistics();
-        }
         mIsRunning = false;
         BitmapCache.getInstance(this).clear();
 
