@@ -96,9 +96,6 @@ public class SettingsActivity extends PreferenceActivity implements
     public static final String PREF_APP_FILTER_RUNNING = "app_filter_running";
     public static final String PREF_HANDLE_WIDTH = "handle_width";
     public static final String PREF_LAUNCHER_MODE = "launcher_mode";
-    public static final String PREF_LAUNCH_STATS = "launch_stats";
-    public static final String PREF_LAUNCH_STATS_DELETE = "launch_stats_delete";
-    public static final String PREF_FAVORITE_APPS_CONFIG_STAT = "favorite_apps_config_stat";
     public static final String PREF_REVERT_RECENTS = "revert_recents";
     public static final String PREF_SWIPE_THUMB_UPDATE = "swipe_thumb_update";
     public static final String PREF_DIM_ACTION_BUTTON ="dim_action_buttons";
@@ -149,9 +146,6 @@ public class SettingsActivity extends PreferenceActivity implements
     private ListPreference mThumbSize;
     private SwitchPreference mEnable;
     private SwitchPreference mLauncherMode;
-    private Preference mLaunchStatsDelete;
-    private SwitchPreference mLaunchStats;
-    private Preference mFavoriteAppsConfigStat;
     private CheckBoxPreference mRevertRecents;
 
     @Override
@@ -250,9 +244,6 @@ public class SettingsActivity extends PreferenceActivity implements
         mThumbSize.setValueIndex(idx);
         mThumbSize.setSummary(mThumbSize.getEntries()[idx]);
         mLauncherMode = (SwitchPreference) findPreference(PREF_LAUNCHER_MODE);
-        mLaunchStats = (SwitchPreference) findPreference(PREF_LAUNCH_STATS);
-        mLaunchStatsDelete = (Preference) findPreference(PREF_LAUNCH_STATS_DELETE);
-        mFavoriteAppsConfigStat = (Preference) findPreference(PREF_FAVORITE_APPS_CONFIG_STAT);
         mRevertRecents = (CheckBoxPreference) findPreference(PREF_REVERT_RECENTS);
         mRevertRecents.setEnabled(mLayoutStyle.getValue().equals("1"));
         mThumbSize.setEnabled(mLayoutStyle.getValue().equals("1"));
@@ -315,36 +306,8 @@ public class SettingsActivity extends PreferenceActivity implements
             Utils.parseFavorites(favoriteListString, favoriteList);
             doShowFavoritesList(favoriteList);
             return true;
-        } else if (preference == mFavoriteAppsConfigStat) {
-            final List<String> favoriteList = Utils.getFavoriteListFromStats(this, 10);
-            if (favoriteList.size() < 5) {
-                new AlertDialog.Builder(this)
-                    .setTitle(R.string.launch_stats_low_title)
-                    .setMessage(R.string.launch_stats_low_notice)
-                    .setCancelable(true)
-                    .setNegativeButton(android.R.string.cancel, null)
-                    .setPositiveButton(android.R.string.ok,
-                            new DialogInterface.OnClickListener() {
-                                @Override
-                                public void onClick(DialogInterface dialog, int which) {
-                                    doShowFavoritesList(favoriteList);
-                                }
-                            }).show();
-            } else {
-                doShowFavoritesList(favoriteList);
-            }
-            return true;
         } else if (preference == mLauncherMode){
             Utils.enableLauncherMode(this, mLauncherMode.isChecked());
-            return true;
-        } else if (preference == mLaunchStats) {
-            if (!mLaunchStats.isChecked()) {
-                SwitchStatistics.getInstance(this).clear();
-            }
-            return true;
-        } else if (preference == mLaunchStatsDelete) {
-            SwitchStatistics.getInstance(this).clear();
-            Toast.makeText(SettingsActivity.this, R.string.launch_stats_delete_notice, Toast.LENGTH_LONG).show();
             return true;
         }
         return false;
