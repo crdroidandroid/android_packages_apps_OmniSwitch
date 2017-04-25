@@ -94,11 +94,11 @@
   <string name="speed_switch_limit_summary">Ogranicz obszar zmian</string>
   <string name="speed_switch_limit">Zmiana poziomu obszaru</string>
   <string name="speed_switch_button_title">Przyciski</string>
-  <string name="speed_switch_button_summary">Skonfiguruj przyciski wyświetlane w szybkim przełączaniu</string>
+  <string name="speed_switch_button_summary">Konfiguruj przyciski akcji w szybkim przełączniku widoku</string>
   <string name="speed_switch_items_summary">Maksymalna liczba elementów</string>
-  <string name="speed_switch_item">Limit pozycji</string>
-  <string name="immersive_mode">Rozszerzony Pulpit</string>
-  <string name="immersive_mode_help">Przełącz tryb immersji</string>
+  <string name="speed_switch_item">Maksymalna liczba elementów</string>
+  <string name="immersive_mode">Tryb pełnoekranowy</string>
+  <string name="immersive_mode_help">Wyłącz tryb odwrócony</string>
   <string name="package_add_favorite_title">Dodaj do ulubionych</string>
   <string name="package_remove_favorite_title">Usuń z ulubionych</string>
   <string name="open_favorite_help">Otwieranie/zamykanie ulubionych</string>
