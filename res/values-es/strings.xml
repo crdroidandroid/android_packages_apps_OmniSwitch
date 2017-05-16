@@ -169,4 +169,8 @@
   <string name="revert_recents_title">Volver a lista de aplicaciones recientes</string>
   <string name="dialog_overlay_perms_title">Error de permiso del OmniSwitch</string>
   <string name="dialog_overlay_perms_msg">Realizar \u0022 Dibujar encima de otras aplicaciones \u0022 permisión</string>
+  <string name="swipe_thumb_update_summary">Las miniaturas se actualizarán durante la demostración de la superposición</string>
+  <string name="swipe_thumb_update_title">Carga asincrónica de la miniatura</string>
+  <string name="dim_action_buttons_summary">Agregar fondo extra dim a los botones de acción</string>
+  <string name="dim_action_buttons_title">Fondo del botón de acción débil</string>
 </resources>
