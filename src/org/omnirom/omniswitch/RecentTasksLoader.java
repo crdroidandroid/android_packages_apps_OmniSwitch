@@ -288,6 +288,9 @@ public class RecentTasksLoader {
                     TaskDescription item = createTaskDescription(recentInfo.id,
                             recentInfo.persistentId, recentInfo.stackId,
                             recentInfo.baseIntent, recentInfo.origActivity);
+                    if (item == null) {
+                        continue; //skip this item and go to next iteration
+                    }
 
                     if (mLockedAppsList.contains(item.getPackageName())) {
                         item.setLocked(true);
